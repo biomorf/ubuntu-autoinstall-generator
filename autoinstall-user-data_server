@@ -1,0 +1,112 @@
+#cloud-config
+autoinstall:
+  apt:
+    disable_components: []
+    geoip: true
+    preserve_sources_list: false
+    primary:
+    - arches:
+      - amd64
+      - i386
+      uri: http://archive.ubuntu.com/ubuntu
+    - arches:
+      - default
+      uri: http://ports.ubuntu.com/ubuntu-ports
+  drivers:
+    install: false
+  identity:
+    hostname: ubs
+    password: $6$0jWzPg64zSsb.pEa$ynDhukvAMSM5RCkI3FO3dOeEhLN07kzBFLGvMbGmfLUJRuW6anQ3LOlF94Mnh1bqLmmWw5OiPAZnncCvVVAEy1
+    realname: ub
+    username: ub
+  kernel:
+    package: linux-generic
+  keyboard:
+    layout: us
+    toggle: null
+    variant: ''
+  locale: en_US.UTF-8
+  network:
+    ethernets:
+      ens3:
+        dhcp4: true
+    version: 2
+  proxy: http://192.168.122.1:8000
+  source:
+    id: ubuntu-server
+    search_drivers: false
+  ssh:
+    allow-pw: true
+    authorized-keys: []
+    install-server: true
+  storage:
+    config:
+    - ptable: gpt
+      path: /dev/vda
+      preserve: true
+      name: ''
+      grub_device: true
+      type: disk
+      id: disk-vda
+    - device: disk-vda
+      size: 1048576
+      flag: bios_grub
+      number: 1
+      preserve: true
+      grub_device: false
+      offset: 1048576
+      partition_type: 21686148-6449-6e6f-744e-656564454649
+      type: partition
+      id: partition-vda1
+    - device: disk-vda
+      size: 537919488
+      flag: boot
+      number: 2
+      preserve: true
+      grub_device: false
+      offset: 2097152
+      partition_type: c12a7328-f81f-11d2-ba4b-00a0c93ec93b
+      type: partition
+      id: partition-vda2
+    - device: disk-vda
+      size: 1792016384
+      wipe: superblock
+      flag: linux
+      number: 3
+      preserve: true
+      grub_device: false
+      offset: 540016640
+      partition_type: 0fc63daf-8483-4772-8e79-3d69d8477de4
+      type: partition
+      id: partition-vda3
+    - fstype: ext4
+      volume: partition-vda3
+      preserve: false
+      type: format
+      id: format-1
+    - device: disk-vda
+      size: 35247882240
+      wipe: superblock
+      flag: linux
+      number: 4
+      preserve: true
+      grub_device: false
+      offset: 2332033024
+      partition_type: 0fc63daf-8483-4772-8e79-3d69d8477de4
+      type: partition
+      id: partition-vda4
+    - fstype: ext4
+      volume: partition-vda4
+      preserve: false
+      type: format
+      id: format-0
+    - path: /
+      device: format-0
+      type: mount
+      id: mount-0
+    - path: /boot
+      device: format-1
+      type: mount
+      id: mount-1
+  updates: security
+  version: 1

@@ -1,0 +1,95 @@
+#cloud-config
+
+### TODO need some kinda validator
+# cloud-init schema -c user-data.file
+#
+##### https://ubuntu.com/server/docs/install/autoinstall-reference
+### https://www.pugetsystems.com/labs/hpc/ubuntu-22-04-server-autoinstall-iso/
+#
+#https://discourse.ubuntu.com/t/automated-server-install-quickstart/16614
+#
+### https://gist.github.com/dbkinghorn/c236aea31d76028b2b6ccdf6d3c6f07e
+#? https://gist.github.com/s3rj1k/55b10cd20f31542046018fcce32f103e
+#
+
+autoinstall:
+  version: 1
+  # start with an up-to-date installer
+  refresh-installer:
+    update: false
+  interactive-sections:
+    - network
+    - storage
+  storage:  # This should set the interactive (lvm set) default
+    layout:
+      name: lvm
+      match:
+        size: largest
+  ### user: ubuntu   password: ubuntu
+  #identity: {hostname: HOSTNAME, password: "ENCRYPTED-PASSWORD", username: USERNAME}
+  identity:
+    hostname: ubuntu-serverauto
+    password: "$6$exDY1mhS4KUYCE/2$zmn9ToZwTKLhCw.b4/b.ZRTIZM30JZ4QrOQ2aOXJ8yk96xpcCof0kxKwuX1kqLG/ygbJ1f8wxED22bTL4F46P0"
+    username: ubuntu
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  ssh:
+    allow-pw: true
+    install-server: true
+  apt:
+    primary:
+      - arches: [default]
+        uri: http://archive.ubuntu.com/ubuntu/
+    #sources:     # Example for adding a ppa source
+    #  ignored1:  # This is here to get the yaml formatting right when adding a ppa
+ #       source: ppa:graphics-drivers/ppa
+  packages:
+    - build-essential
+    - network-manager
+      #- dkms
+    - vim-nox
+    # - ubuntu-desktop-minimal^  # uncomment to add a minimal desktop
+  package_update: true
+  package_upgrade: false
+  late-commands:
+    ## Changing from networkd to NetworkManager
+    # move existing config out of the way
+    - find /target/etc/netplan/ -name "*.yaml" -exec sh -c 'mv "$1" "$1-orig"' _ {} \;
+    # Create a new netplan and enable it
+    - |
+      cat <<EOF | sudo tee /target/etc/netplan/01-netcfg.yaml
+      network:
+        version: 2
+        renderer: NetworkManager
+      EOF
+    - curtin in-target --target /target netplan generate
+    - curtin in-target --target /target netplan apply
+    - curtin in-target --target /target systemctl enable NetworkManager.service
+    # Install NVIDIA driver (with apt-get flags)
+    - curtin in-target -- apt-get -y install --no-install-recommends nvidia-driver-390
+    #- curtin in-target --target=/target -- apt-get --purge -y --quiet=2 remove apport bcache-tools btrfs-progs byobu  friendly-recovery fwupd landscape-common lxd-agent-loader ntfs-3g open-vm-tools plymouth plymouth-theme-ubuntu-text popularity-contest rsync screen sosreport tmux ufw
+    #- curtin in-target --target=/target -- apt-get --purge -y --quiet=2 autoremove
+    #- curtin in-target --target=/target -- apt-get clean
+    #- sed -i 's/ENABLED=1/ENABLED=0/' /target/etc/default/motd-news
+    #- sed -i 's|# en_US.UTF-8 UTF-8|en_US.UTF-8 UTF-8|' /target/etc/locale.gen
+    #- curtin in-target --target=/target -- locale-gen
+    #- ln -fs /dev/null /target/etc/systemd/system/connman.service
+    #- ln -fs /dev/null /target/etc/systemd/system/display-manager.service
+    #- ln -fs /dev/null /target/etc/systemd/system/motd-news.service
+    #- ln -fs /dev/null /target/etc/systemd/system/motd-news.timer
+    #- ln -fs /dev/null /target/etc/systemd/system/plymouth-quit-wait.service
+    #- ln -fs /dev/null /target/etc/systemd/system/plymouth-start.service
+    #- ln -fs /dev/null /target/etc/systemd/system/systemd-resolved.service
+    #- ln -fs /usr/share/zoneinfo/Europe/Kiev /target/etc/localtime
+    #- rm -f /target/etc/resolv.conf
+    #- printf 'nameserver 8.8.8.8\nnameserver 1.1.1.1\noptions timeout:1\noptions attempts:1\noptions rotate\n' > /target/etc/resolv.conf
+    #- rm -f /target/etc/update-motd.d/10-help-text
+
+  #user-data: # Commands here run during first boot (cannot be interactive)
+    #disable_root: false
+  #  runcmd:
+  #    # Install the NVIDIA driver from the ppa we setup earlier
+  #    - [apt-get, install, --yes,  nvidia-driver-390] #, --no-install-recommends]
+
+# vi: set filetype=yaml :
